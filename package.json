@@ -50,7 +50,6 @@
     ]
   },
   "devDependencies": {
-    "@types/axios": "^0.9.36",
     "@types/react-toastify": "^4.0.2",
     "prettier": "^3.5.3"
   }

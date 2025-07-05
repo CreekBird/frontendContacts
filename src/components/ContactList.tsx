@@ -1,22 +1,25 @@
-import React from "react";
-import Contact from "./Contact";
+import React from 'react';
+import Contact from './Contact';
 
 interface ContactType {
-  id?: number | string;
+  id: string | number;
   name: string;
-  email: string;
-  phone: string;
-  address: string;
   title: string;
+  email: string;
+  address: string;
+  phone: string;
   status: string;
-  photoUrl?: string;
+  photoUrl: string;
+}
+
+interface PaginatedResponse {
+  content: ContactType[];
+  totalPages: number;
+  [key: string]: any; // For any additional pagination properties
 }
 
 interface ContactListProps {
-  data: {
-    content: ContactType[];
-    totalPages: number;
-  } | null;
+  data: PaginatedResponse | null;
   currentPage: number;
   getAllContacts: (page: number) => void;
 }
@@ -26,45 +29,48 @@ const ContactList: React.FC<ContactListProps> = ({
   currentPage,
   getAllContacts,
 }) => {
-  if (!data) return <div>Loading contacts...</div>;
+  const handlePageClick = (page: number) => {
+    // Prevent navigation to invalid pages
+    if (page < 0 || page >= (data?.totalPages ?? 0)) return;
+    getAllContacts(page);
+  };
 
   return (
     <main className="main">
-      {data.content.length === 0 && (
-        <div>No Contacts. Please add a new contact</div>
+      {data?.content?.length === 0 && (
+        <div className="no-contacts">No Contacts. Please add a new contact</div>
       )}
 
       <ul className="contact__list">
-        {data.content.length > 0 &&
-          data.content.map((contact) => (
-            <Contact contact={contact} key={contact.id} />
-          ))}
+        {data?.content?.map((contact) => (
+          <Contact contact={contact} key={contact.id} />
+        ))}
       </ul>
 
-      {data.content.length > 0 && data.totalPages > 1 && (
+      {data?.content && data.content.length > 0 && data.totalPages > 1 && (
         <div className="pagination">
           <button
-            onClick={() => getAllContacts(currentPage - 1)}
-            className={currentPage === 0 ? "disabled" : ""}
+            onClick={() => handlePageClick(currentPage - 1)}
             disabled={currentPage === 0}
+            className={currentPage === 0 ? 'disabled' : ''}
           >
             &laquo;
           </button>
 
           {Array.from({ length: data.totalPages }, (_, page) => (
             <button
-              onClick={() => getAllContacts(page)}
-              className={currentPage === page ? "active" : ""}
               key={page}
+              onClick={() => handlePageClick(page)}
+              className={currentPage === page ? 'active' : ''}
             >
               {page + 1}
             </button>
           ))}
 
           <button
-            onClick={() => getAllContacts(currentPage + 1)}
-            className={data.totalPages === currentPage + 1 ? "disabled" : ""}
-            disabled={data.totalPages === currentPage + 1}
+            onClick={() => handlePageClick(currentPage + 1)}
+            disabled={currentPage === data.totalPages - 1}
+            className={currentPage === data.totalPages - 1 ? 'disabled' : ''}
           >
             &raquo;
           </button>

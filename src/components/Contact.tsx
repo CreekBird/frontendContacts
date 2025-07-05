@@ -1,16 +1,16 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface ContactProps {
   contact: {
-    id?: number | string;
+    id: string | number;
+    photoUrl: string;
     name: string;
     title: string;
-    photoUrl?: string;
     email: string;
     address: string;
     phone: string;
-    status: "Active" | "Inactive" | string;
+    status: 'Active' | 'Inactive' | string; // More specific if you know all possible statuses
   };
 }
 
@@ -22,27 +22,27 @@ const Contact: React.FC<ContactProps> = ({ contact }) => {
           <img src={contact.photoUrl} alt={contact.name} />
         </div>
         <div className="contact__details">
-          <p className="contact_name">{contact.name.substring(0, 15)}</p>
+          <p className="contact_name">{contact.name.substring(0, 15)} </p>
           <p className="contact_title">{contact.title}</p>
         </div>
       </div>
       <div className="contact__body">
         <p>
-          <i className="bi bi-envelope" aria-hidden="true"></i>{" "}
-          {contact.email.substring(0, 20)}
+          <i className="bi bi-envelope"></i>{' '}
+          {contact.email.substring(0, 20)}{' '}
         </p>
         <p>
-          <i className="bi bi-geo" aria-hidden="true"></i> {contact.address}
+          <i className="bi bi-geo"></i> {contact.address}
         </p>
         <p>
-          <i className="bi bi-telephone" aria-hidden="true"></i> {contact.phone}
+          <i className="bi bi-telephone"></i> {contact.phone}
         </p>
         <p>
-          {contact.status === "Active" ? (
-            <i className="bi bi-check-circle text-success"></i>
+          {contact.status === 'Active' ? (
+            <i className="bi bi-check-circle"></i>
           ) : (
-            <i className="bi bi-x-circle text-danger"></i>
-          )}{" "}
+            <i className="bi bi-x-circle"></i>
+          )}{' '}
           {contact.status}
         </p>
       </div>

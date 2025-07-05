@@ -1,103 +1,154 @@
-import { useEffect, useRef, useState, ChangeEvent, FormEvent } from "react";
-import "react-toastify/dist/ReactToastify.css";
-import Header from "./components/Header";
-import ContactList from "./components/ContactList";
-import { getContacts, saveContact, updatePhoto } from "./api/ContactService";
-import { Routes, Route, Navigate } from "react-router-dom";
-import ContactDetail from "./components/ContactDetail";
-import { toastError } from "./api/ToastService";
-import { ToastContainer } from "react-toastify";
-import { Contact, PaginatedData } from "./types";
+import { useEffect, useRef, useState, ChangeEvent, FormEvent } from 'react';
+import 'react-toastify/dist/ReactToastify.css';
+import Header from './components/Header';
+import ContactList from './components/ContactList';
+import {
+  ContactResponseData,
+  getContacts,
+  saveContact,
+  updatePhoto,
+} from './api/ContactService';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import ContactDetail from './components/ContactDetail';
+import { toastError } from './api/ToastService';
+import { ToastContainer } from 'react-toastify';
+import Login from './Login/Login';
+
+interface ContactFormValues {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  title: string;
+  status: string;
+}
+
+interface ApiResponse {
+  content: any[];
+  totalPages: number;
+  totalElements: number;
+  [key: string]: any;
+}
 
 function App() {
   const modalRef = useRef<HTMLDialogElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const [data, setData] = useState<PaginatedData>({
+  const navigate = useNavigate();
+  const [data, setData] = useState<{
+    content: ContactResponseData[];
+    totalPages: number;
+    totalElements: number;
+  }>({
     content: [],
     totalPages: 0,
     totalElements: 0,
   });
-
   const [currentPage, setCurrentPage] = useState<number>(0);
-  const [file, setFile] = useState<File | undefined>(undefined);
-  const [values, setValues] = useState<Contact>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    title: "",
-    status: "",
+  const [file, setFile] = useState<File | null>(null);
+  const [values, setValues] = useState<ContactFormValues>({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    title: '',
+    status: '',
   });
 
-  const getAllContacts = async (page = 0, size = 10) => {
+  const getAllContacts = async (page: number = 0, size: number = 10) => {
     try {
       setCurrentPage(page);
       const { data } = await getContacts(page, size);
-      setData(data as unknown as PaginatedData);
-      console.log(data);
-    } catch (error: any) {
+      setData(data);
+    } catch (error) {
       console.error(error);
-      toastError(error.message);
+      toastError(
+        error instanceof Error ? error.message : 'Failed to fetch contacts',
+      );
     }
   };
 
   const onChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setValues({ ...values, [event.target.name]: event.target.value });
+    const { name, value } = event.target;
+    setValues((prev) => ({ ...prev, [name]: value }));
   };
+  const handleLogin = async (token?: string) => {
+    if (token) {
+      // Store the token (in state, context, or localStorage)
+      localStorage.setItem('authToken', token);
 
-  const handleNewContact = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    try {
-      const { data } = await saveContact(values);
-      if (!file) return;
-
-      const formData = new FormData();
-      formData.append("file", file, file.name);
-      formData.append("id", String(data.id));
-      await updatePhoto(formData);
-
-      toggleModal(false);
-      setFile(undefined);
-      if (fileRef.current) fileRef.current.value = "";
-      setValues({
-        name: "",
-        email: "",
-        phone: "",
-        address: "",
-        title: "",
-        status: "",
-      });
-      getAllContacts();
-    } catch (error: any) {
-      console.error(error);
-      toastError(error.message);
+      navigate('/contacts');
     }
   };
 
-  const updateContact = async (contact: Contact) => {
+  const handleNewContact = async (event: FormEvent) => {
+    event.preventDefault();
     try {
-      const { data } = await saveContact(contact);
-      console.log(data);
-    } catch (error: any) {
+      const { data: contactData } = await saveContact(values);
+
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (contactData.id !== undefined && contactData.id !== null) {
+          formData.append('id', contactData.id.toString());
+        } else {
+          throw new Error('Contact ID is undefined');
+        }
+        await updatePhoto(formData);
+      }
+
+      toggleModal(false);
+      setFile(null);
+      if (fileRef.current) fileRef.current.value = '';
+      setValues({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        title: '',
+        status: '',
+      });
+      await getAllContacts();
+    } catch (error) {
       console.error(error);
-      toastError(error.message);
+      toastError(
+        error instanceof Error ? error.message : 'Failed to create contact',
+      );
+    }
+  };
+
+  const updateContact = async (contact: ContactResponseData) => {
+    try {
+      await saveContact({
+        id: contact.id,
+        name: contact.name ?? '',
+        email: contact.email ?? '',
+        phone: contact.phone ?? '',
+        address: contact.address ?? '',
+        title: contact.title ?? '',
+        status: contact.status ?? '',
+      });
+    } catch (error) {
+      console.error(error);
+      toastError(
+        error instanceof Error ? error.message : 'Failed to update contact',
+      );
     }
   };
 
   const updateImage = async (formData: FormData) => {
     try {
       await updatePhoto(formData);
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      toastError(error.message);
+      toastError(
+        error instanceof Error ? error.message : 'Failed to update photo',
+      );
     }
   };
 
   const toggleModal = (show: boolean) => {
-    if (modalRef.current) {
-      show ? modalRef.current.showModal() : modalRef.current.close();
-    }
+    if (!modalRef.current) return;
+    show ? modalRef.current.showModal() : modalRef.current.close();
   };
 
   useEffect(() => {
@@ -106,16 +157,26 @@ function App() {
 
   return (
     <>
-      <Header toggleModal={toggleModal} nbOfContacts={data.totalElements} />
+      <Header
+        toggleModal={toggleModal}
+        nbOfContacts={data.totalElements || 0}
+      />
+
       <main className="main">
         <div className="container">
           <Routes>
-            <Route path="/" element={<Navigate to="/contacts" />} />
+            <Route path="/" element={<Login onLogin={handleLogin} />} />
+            <Route path="/contacts" element={<Navigate to={'/contacts'} />} />
             <Route
               path="/contacts"
               element={
                 <ContactList
-                  data={data}
+                  data={{
+                    ...data,
+                    content: data.content.filter(
+                      (contact) => contact.id !== undefined,
+                    ) as any, // Optionally, map id to string if required
+                  }}
                   currentPage={currentPage}
                   getAllContacts={getAllContacts}
                 />
@@ -134,30 +195,31 @@ function App() {
         </div>
       </main>
 
+      {/* Modal */}
       <dialog ref={modalRef} className="modal" id="modal">
         <div className="modal__header">
           <h3>New Contact</h3>
-          <i onClick={() => toggleModal(false)} className="bi bi-x-lg"></i>
+          <i
+            onClick={() => toggleModal(false)}
+            className="bi bi-x-lg"
+            role="button"
+            aria-label="Close modal"
+          ></i>
         </div>
         <div className="divider"></div>
         <div className="modal__body">
           <form onSubmit={handleNewContact}>
             <div className="user-details">
-              {[
-                { name: "name", label: "Name" },
-                { name: "email", label: "Email" },
-                { name: "title", label: "Title" },
-                { name: "phone", label: "Phone Number" },
-                { name: "address", label: "Address" },
-                { name: "status", label: "Account Status" },
-              ].map((field) => (
-                <div className="input-box" key={field.name}>
-                  <span className="details">{field.label}</span>
+              {Object.keys(values).map((field) => (
+                <div className="input-box" key={field}>
+                  <span className="details">
+                    {field.charAt(0).toUpperCase() + field.slice(1)}
+                  </span>
                   <input
-                    type="text"
-                    name={field.name}
-                    value={(values as any)[field.name]}
+                    type={field === 'email' ? 'email' : 'text'}
+                    value={values[field as keyof ContactFormValues]}
                     onChange={onChange}
+                    name={field}
                     required
                   />
                 </div>
@@ -166,18 +228,18 @@ function App() {
                 <span className="details">Profile Photo</span>
                 <input
                   type="file"
-                  onChange={(e) => setFile(e.target.files?.[0])}
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
                   ref={fileRef}
                   name="photo"
-                  required
+                  accept="image/*"
                 />
               </div>
             </div>
             <div className="form_footer">
               <button
+                onClick={() => toggleModal(false)}
                 type="button"
                 className="btn btn-danger"
-                onClick={() => toggleModal(false)}
               >
                 Cancel
               </button>

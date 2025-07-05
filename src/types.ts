@@ -1,6 +1,6 @@
 // src/types.ts
 export interface Contact {
-  id?: number | string;
+  id: string;
   name: string;
   email: string;
   phone: string;
@@ -14,4 +14,9 @@ export interface PaginatedData {
   content: Contact[];
   totalPages: number;
   totalElements: number;
+  number?: number;
+  size?: number;
+  last?: boolean;
+  first?: boolean;
+  empty?: boolean;
 }

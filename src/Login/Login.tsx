@@ -1,87 +1,125 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
-import React, { useState } from "react";
-import "./Login.css";
+import React, { useState } from 'react';
+import {
+  Button,
+  TextField,
+  Box,
+  Typography,
+  CircularProgress,
+} from '@mui/material';
+import { green } from '@mui/material/colors';
+import { useNavigate } from 'react-router-dom';
 
-function Login() {
-  // State to hold input values
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
-
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // prevent page reload
-
-    try {
-      const response = await fetch("http://localhost:8080/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (response.ok) {
-        const text = await response.text();
-        setMessage(text);
-      } else {
-        setMessage("Login failed");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      setMessage("An error occurred");
-    }
-  };
-
-  return (
-    <div className="wrapper">
-      <form onSubmit={handleSubmit}>
-        <h1>Login</h1>
-
-        <div className="input-box">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-          <i className="bx bx-user"></i>
-        </div>
-
-        <div className="input-box">
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <i className="bx bx-lock"></i>
-        </div>
-
-        <div className="remember-forget">
-          <label>
-            <input type="checkbox" />
-            Remember Me
-          </label>
-          <a href="#">Forgot Password?</a>
-        </div>
-
-        <button type="submit" className="btn">
-          Login
-        </button>
-
-        <p style={{ color: "red", marginTop: "10px" }}>{message}</p>
-
-        <div className="register-link">
-          <p>
-            Don't have an account? <a href="#">Register now</a>
-          </p>
-        </div>
-      </form>
-    </div>
-  );
+interface LoginResponse {
+  token: string;
+  username: string;
+  roles: string[];
 }
 
-export default Login;
+interface ErrorResponse {
+  message: string;
+  status: number;
+}
+
+type Props = {
+  onLogin: (token: string, username: string) => void;
+};
+
+export default function Login({ onLogin = () => {} }: Props) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Add request verification
+    console.log('Attempting login with:', { username, password });
+
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
+
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Login failed');
+      }
+
+      const data = await response.json();
+      console.log('Received token:', data.token);
+
+      localStorage.setItem('authToken', data.token);
+      window.location.href = '/contacts';
+    } catch (error) {
+      console.error('Full error:', error);
+      alert('Login failed. Please check console for details.');
+    }
+  };
+  return (
+    <Box
+      component="form"
+      onSubmit={handleLogin}
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      height="100vh"
+      gap={2}
+    >
+      <Typography variant="h4" color={green[800]}>
+        LOGIN
+      </Typography>
+
+      <TextField
+        label="Username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        variant="outlined"
+        required
+        disabled={isLoading}
+        fullWidth
+        sx={{ maxWidth: 300 }}
+      />
+
+      <TextField
+        label="Password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        variant="outlined"
+        required
+        disabled={isLoading}
+        fullWidth
+        sx={{ maxWidth: 300 }}
+      />
+
+      {error && (
+        <Typography color="error" variant="body2">
+          {error}
+        </Typography>
+      )}
+
+      <Button
+        type="submit"
+        variant="contained"
+        disabled={isLoading}
+        sx={{ bgcolor: green[800], '&:hover': { bgcolor: green[900] } }}
+      >
+        {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Login'}
+      </Button>
+    </Box>
+  );
+}
