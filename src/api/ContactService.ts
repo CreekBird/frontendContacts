@@ -37,7 +37,7 @@ export async function getContacts(
 }
 
 export async function getContact(
-  id: number,
+  id: string,
 ): Promise<AxiosResponse<ContactResponseData>> {
   return axios.get<ContactResponseData>(`${API_URL}/${id}`);
 }

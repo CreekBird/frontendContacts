@@ -42,10 +42,13 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
   });
 
   const { id } = useParams<{ id: string }>();
+  const parsedId = Number(id);
+
+  const isValidId = !isNaN(parsedId) && parsedId > 0;
 
   const fetchContact = async (id: string) => {
     try {
-      const { data } = await getContact(Number(id));
+      const { data } = await getContact(id);
 
       setContact(data);
       toastSuccess('Contact retrieved');
@@ -69,7 +72,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
     try {
       const formData = new FormData();
       formData.append('file', file, file.name);
-      formData.append('id', id!);
+      formData.append('id', String(parsedId));
       await updateImage(formData);
       setContact((prev) => ({
         ...prev,
@@ -93,7 +96,7 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
     event.preventDefault();
     try {
       await updateContact(contact);
-      await fetchContact(id!);
+      await fetchContact(String(parsedId));
       toastSuccess('Contact Updated');
     } catch (error) {
       console.error(error);
@@ -102,10 +105,10 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
   };
 
   useEffect(() => {
-    if (id) {
-      fetchContact(id);
+    if (isValidId) {
+      fetchContact(String(parsedId));
     }
-  }, [id]);
+  }, [parsedId]);
 
   return (
     <>
@@ -116,12 +119,8 @@ const ContactDetail: React.FC<ContactDetailProps> = ({
       <div className="profile">
         <div className="profile__details">
           <img
-            src={contact.photoUrl || '/default-avatar.png'}
+            src={contact.photoUrl}
             alt={contact.name ? `${contact.name}` : 'Contact avatar'}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = '/default-avatar.png';
-            }}
           />
           <div className="profile__metadata">
             <p className="profile__name">{contact.name}</p>

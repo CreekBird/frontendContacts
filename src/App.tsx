@@ -166,7 +166,7 @@ function App() {
         <div className="container">
           <Routes>
             <Route path="/" element={<Login onLogin={handleLogin} />} />
-            <Route path="/contacts" element={<Navigate to={'/contacts'} />} />
+
             <Route
               path="/contacts"
               element={
